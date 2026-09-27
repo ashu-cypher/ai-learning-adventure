@@ -11,31 +11,6 @@
 
 import { Capacitor } from '@capacitor/core';
 
-// The plugin package may not ship its own types; declare the surface we use.
-declare module '@codetrix-studio/capacitor-google-auth' {
-  export interface GoogleAuthPluginUser {
-    id: string;
-    name: string;
-    email: string;
-    imageUrl?: string;
-    familyName?: string;
-    givenName?: string;
-    authentication?: {
-      idToken?: string;
-      accessToken?: string;
-    };
-  }
-  export class GoogleAuth {
-    static initialize(options?: {
-      clientId?: string;
-      scopes?: string[];
-      grantOfflineAccess?: boolean;
-    }): Promise<void>;
-    static signIn(): Promise<GoogleAuthPluginUser>;
-    static signOut(): Promise<void>;
-    static refresh(): Promise<void>;
-  }
-}
 
 export interface User {
   id: string;
