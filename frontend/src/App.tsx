@@ -7,15 +7,35 @@ import { WelcomeScreen } from './components/welcome/WelcomeScreen';
 import { ProgressMap } from './components/map/ProgressMap';
 import { StageContainer } from './components/stages/StageContainer';
 import { ParentDashboardModal } from './components/parent/ParentDashboardModal';
+import { GamesScreen } from './components/menu/GamesScreen';
+import { LoginScreen } from './components/auth/LoginScreen';
+import { getCurrentUser, onAuthChange, signOut, type User } from './services/auth';
 
 export const App: React.FC = () => {
-  const [currentScreen, setCurrentScreen] = useState<'welcome' | 'map' | 'stage'>('welcome');
+  const [currentScreen, setCurrentScreen] = useState<'welcome' | 'map' | 'stage' | 'games'>('welcome');
   const [worlds, setWorlds] = useState<WorldSummary[]>([]);
   const [activeWorldId, setActiveWorldId] = useState<string>('colors');
   const [currentLesson, setCurrentLesson] = useState<LessonPlan | null>(null);
   const [totalStars, setTotalStars] = useState<number>(0);
   const [isParentGateOpen, setIsParentGateOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Parent Google sign-in (Gmail auth)
+  const [user, setUser] = useState<User | null>(() => getCurrentUser());
+  const [showLogin, setShowLogin] = useState(false);
+
+  useEffect(() => {
+    // Keep auth state in sync (native + web)
+    const unsubscribe = onAuthChange(setUser);
+    return unsubscribe;
+  }, []);
+
+  const handleParentSignOut = async () => {
+    try {
+      await signOut();
+    } catch (err) {
+      console.error('Sign out failed:', err);
+    }
+  };
 
   // Load worlds and compute total stars
   const loadWorldsData = useCallback(async () => {
@@ -81,6 +101,10 @@ export const App: React.FC = () => {
         currentStars={totalStars}
         onNavigateHome={() => setCurrentScreen('welcome')}
         onNavigateMap={() => setCurrentScreen('map')}
+        onNavigateGames={() => {
+          sound.playPop();
+          setCurrentScreen('games');
+        }}
         onOpenParentGate={() => setIsParentGateOpen(true)}
         currentScreen={currentScreen}
       />
@@ -95,7 +119,21 @@ export const App: React.FC = () => {
             </p>
           </div>
         ) : currentScreen === 'welcome' ? (
-          <WelcomeScreen onStartAdventure={handleStartAdventure} />
+          <WelcomeScreen
+            onStartAdventure={handleStartAdventure}
+            onPlayGames={() => {
+              sound.playPop();
+              setCurrentScreen('games');
+            }}
+            parentUser={user}
+            onParentSignIn={() => setShowLogin(true)}
+            onParentSignOut={handleParentSignOut}
+          />
+        ) : currentScreen === 'games' ? (
+          <GamesScreen
+            onBack={() => setCurrentScreen('welcome')}
+            onGoToLearning={() => setCurrentScreen('map')}
+          />
         ) : currentScreen === 'map' ? (
           <ProgressMap
             worlds={worlds}
@@ -125,6 +163,28 @@ export const App: React.FC = () => {
           setIsParentGateOpen(false);
         }}
       />
+
+      {/* Parent Google Sign-In */}
+      {showLogin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="relative w-full max-w-md">
+            <LoginScreen
+              onLogin={(u) => {
+                setUser(u);
+                setShowLogin(false);
+                sound.playSuccessChime();
+              }}
+            />
+            <button
+              onClick={() => setShowLogin(false)}
+              className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 text-slate-600 font-bubble font-bold text-xl shadow active:scale-95 transition-transform"
+              aria-label="Close sign in"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

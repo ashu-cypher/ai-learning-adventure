@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
-import { Home, Map, Star, Volume2, VolumeX, ShieldCheck } from 'lucide-react';
+import { Home, Map, Star, Volume2, VolumeX, ShieldCheck, Gamepad2 } from 'lucide-react';
 import { sound } from '../../audio/soundEngine';
 
 interface HeaderProps {
   currentStars: number;
   onNavigateHome: () => void;
   onNavigateMap: () => void;
+  onNavigateGames: () => void;
   onOpenParentGate: () => void;
-  currentScreen: 'welcome' | 'map' | 'stage';
+  currentScreen: 'welcome' | 'map' | 'stage' | 'games';
 }
 
 export const ChildHeader: React.FC<HeaderProps> = ({
   currentStars,
   onNavigateHome,
   onNavigateMap,
+  onNavigateGames,
   onOpenParentGate,
   currentScreen,
 }) => {
@@ -56,6 +58,20 @@ export const ChildHeader: React.FC<HeaderProps> = ({
           >
             <Map className="w-6 h-6 text-emerald-500" />
             <span className="hidden sm:inline font-bubble font-semibold text-lg">Map</span>
+          </button>
+        )}
+
+        {currentScreen !== 'games' && currentScreen !== 'welcome' && (
+          <button
+            onClick={() => {
+              sound.playPop();
+              onNavigateGames();
+            }}
+            className="flex items-center gap-2 bg-white/90 hover:bg-white text-slate-700 px-3.5 py-2.5 rounded-2xl shadow-md border-2 border-purple-200 active:scale-95 transition-transform"
+            title="Fun Games"
+          >
+            <Gamepad2 className="w-6 h-6 text-purple-500" />
+            <span className="hidden sm:inline font-bubble font-semibold text-lg">Games</span>
           </button>
         )}
       </div>

@@ -2,12 +2,23 @@ import React, { useEffect } from 'react';
 import { MiloCompanion } from '../character/MiloCompanion';
 import { Rocket, Sparkles } from 'lucide-react';
 import { sound } from '../../audio/soundEngine';
+import type { User } from '../../services/auth';
 
 interface WelcomeProps {
   onStartAdventure: () => void;
+  onPlayGames: () => void;
+  parentUser?: User | null;
+  onParentSignIn?: () => void;
+  onParentSignOut?: () => void;
 }
 
-export const WelcomeScreen: React.FC<WelcomeProps> = ({ onStartAdventure }) => {
+export const WelcomeScreen: React.FC<WelcomeProps> = ({
+  onStartAdventure,
+  onPlayGames,
+  parentUser,
+  onParentSignIn,
+  onParentSignOut,
+}) => {
   useEffect(() => {
     sound.playSuccessChime();
   }, []);
@@ -64,6 +75,58 @@ export const WelcomeScreen: React.FC<WelcomeProps> = ({ onStartAdventure }) => {
         <Rocket className="w-8 h-8 fill-white" />
         <span>START ADVENTURE</span>
       </button>
+
+      {/* Fun Games Button */}
+      <button
+        onClick={() => {
+          sound.playPop();
+          onPlayGames();
+        }}
+        className="w-full max-w-md mt-4 py-4 px-8 bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white font-bubble font-extrabold text-xl sm:text-2xl rounded-3xl shadow-xl hover:shadow-2xl border-4 border-purple-200 active:scale-95 transition-all flex items-center justify-center gap-3"
+      >
+        <span className="text-3xl">🎮</span>
+        <span>FUN GAMES</span>
+      </button>
+
+      {/* Grown-ups: Google sign-in */}
+      <div className="w-full max-w-md mt-8 flex flex-col items-center gap-2">
+        <p className="font-bubble text-sm text-slate-400">👨‍👩‍👧 For grown-ups</p>
+        {parentUser ? (
+          <div className="flex items-center gap-3 bg-white/80 border-2 border-slate-200 rounded-2xl px-4 py-2 shadow-sm">
+            {parentUser.photoUrl && (
+              <img
+                src={parentUser.photoUrl}
+                alt=""
+                className="w-9 h-9 rounded-full border-2 border-slate-200"
+              />
+            )}
+            <div className="text-left">
+              <p className="font-bubble font-bold text-slate-700 leading-tight">{parentUser.name}</p>
+              <p className="font-bubble text-xs text-slate-400 leading-tight">{parentUser.email}</p>
+            </div>
+            <button
+              onClick={() => {
+                sound.playPop();
+                onParentSignOut?.();
+              }}
+              className="ml-2 font-bubble font-bold text-sm text-slate-500 underline underline-offset-2"
+            >
+              Sign out
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => {
+              sound.playPop();
+              onParentSignIn?.();
+            }}
+            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-600 font-bubble font-bold px-5 py-2.5 rounded-2xl shadow border-2 border-slate-200 active:scale-95 transition-all"
+          >
+            <span className="text-xl">🔐</span>
+            <span>Parent Sign in with Google</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 };
