@@ -1,0 +1,45 @@
+# Python
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+learning_adventure.db
+backend/.env
+backend/.env.local
+backend/learning_adventure.db
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Android / Gradle
+.gradle/
+**/build/
+frontend/android/.gradle/
+frontend/android/build/
+frontend/android/app/build/
+frontend/android/capacitor-cordova-android-plugins/build/
+frontend/android/local.properties
+frontend/android/.idea/
+*.apk
+*.aab
+*.keystore
+!debug.keystore
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
