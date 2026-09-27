@@ -20,12 +20,30 @@ interface Category {
   emoji: string;
   gradient: string;
   ring: string;
+  /** soft tinted background for the section card */
+  tint: string;
   games: GameCard[];
 }
+
+/** A distinct playful sound for each game so every tap feels different */
+const GAME_SOUNDS: Record<string, () => void> = {
+  painting: () => sound.playSparkle(),
+  spiderman: () => sound.playWhoosh(),
+  superman: () => sound.playWhoosh(),
+  batman: () => sound.playWhoosh(),
+  piano: () => sound.playDrumCymbal(),
+  drums: () => sound.playDrumKick(),
+  xylophone: () => sound.playDrumSnare(),
+  bubbles: () => sound.playPop(),
+  balloons: () => sound.playBoing(),
+  stars: () => sound.playStarCollect(),
+  learning: () => sound.playYay(),
+};
 
 const CATEGORIES: Category[] = [
   {
     title: 'Painting',
+    tint: 'bg-gradient-to-br from-pink-100 to-rose-100',
     emoji: '🎨',
     gradient: 'from-pink-400 to-rose-500',
     ring: 'border-pink-200',
@@ -33,6 +51,7 @@ const CATEGORIES: Category[] = [
   },
   {
     title: 'Superheroes',
+    tint: 'bg-gradient-to-br from-blue-100 to-indigo-100',
     emoji: '🦸',
     gradient: 'from-blue-500 to-indigo-600',
     ring: 'border-blue-200',
@@ -44,6 +63,7 @@ const CATEGORIES: Category[] = [
   },
   {
     title: 'Music',
+    tint: 'bg-gradient-to-br from-amber-100 to-orange-100',
     emoji: '🎵',
     gradient: 'from-amber-400 to-orange-500',
     ring: 'border-amber-200',
@@ -55,6 +75,7 @@ const CATEGORIES: Category[] = [
   },
   {
     title: 'Animation',
+    tint: 'bg-gradient-to-br from-purple-100 to-fuchsia-100',
     emoji: '✨',
     gradient: 'from-purple-400 to-fuchsia-500',
     ring: 'border-purple-200',
@@ -66,6 +87,7 @@ const CATEGORIES: Category[] = [
   },
   {
     title: 'Learning',
+    tint: 'bg-gradient-to-br from-emerald-100 to-teal-100',
     emoji: '📚',
     gradient: 'from-emerald-400 to-teal-500',
     ring: 'border-emerald-200',
@@ -78,7 +100,8 @@ export const GamesHub: React.FC<GamesHubProps> = ({ onSelectGame, onBack, onGoTo
   const recentGames = useMemo(() => getRecentlyPlayedGames(6), []);
 
   const handleSelect = (gameId: string) => {
-    sound.playPop();
+    // Distinct sound per game — every tap feels different!
+    (GAME_SOUNDS[gameId] || (() => sound.playPop()))();
     if (gameId === 'learning') {
       sound.speak("Let's go on a color adventure!");
       onGoToLearning();
@@ -147,7 +170,7 @@ export const GamesHub: React.FC<GamesHubProps> = ({ onSelectGame, onBack, onGoTo
       {/* Categories */}
       <div className="flex flex-col gap-6">
         {CATEGORIES.map((cat) => (
-          <section key={cat.title} className={`bg-white/70 rounded-3xl border-2 ${cat.ring} shadow-md p-4`}>
+          <section key={cat.title} className={`${cat.tint} rounded-3xl border-2 ${cat.ring} shadow-md p-4 animate-pop-in`}>
             <div className="flex items-center gap-3 mb-3">
               <div
                 className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${cat.gradient} flex items-center justify-center text-3xl shadow-md animate-bounce-subtle`}

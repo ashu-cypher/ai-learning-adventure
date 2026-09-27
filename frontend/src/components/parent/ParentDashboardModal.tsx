@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ParentDashboardData } from '../../types';
 import { api } from '../../services/api';
 import { sound } from '../../audio/soundEngine';
-import { ShieldCheck, X, Star, CheckCircle, AlertCircle, RefreshCw, BookOpen, Sparkles } from 'lucide-react';
+import { ShieldCheck, X, Star, CheckCircle, AlertCircle, RefreshCw, BookOpen, Sparkles, Volume2, Stethoscope } from 'lucide-react';
 
 interface ParentDashboardProps {
   isOpen: boolean;
@@ -23,6 +23,32 @@ export const ParentDashboardModal: React.FC<ParentDashboardProps> = ({
   const [data, setData] = useState<ParentDashboardData | null>(null);
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState<string | null>(null);
+  const [testingVoice, setTestingVoice] = useState(false);
+
+  const handleTestVoice = async () => {
+    setTestingVoice(true);
+    setVoiceStatus('Checking voice engine...');
+    try {
+      const status = await sound.checkVoiceEngine();
+      const bits: string[] = [];
+      bits.push(`Engine: ${status.platform === 'android-native' ? 'Android native TTS' : status.platform === 'web' ? 'Web speech' : 'NONE FOUND'}`);
+      bits.push(`Voices loaded: ${status.voiceCount}`);
+      bits.push(`Hindi voice: ${status.hindiVoiceAvailable ? 'yes' : 'no'}`);
+      bits.push(`Audio unlocked: ${status.audioUnlocked ? 'yes' : 'not yet — tap something first'}`);
+      if (status.lastError) bits.push(`Last error: ${status.lastError}`);
+      setVoiceStatus(bits.join(' • '));
+      // Speak the test line out loud (English then Hindi)
+      sound.speak('Hello! Milo is ready to talk with you!', 'en', () => {
+        sound.speak('नमस्ते! मीलो आपसे बात करने के लिए तैयार है!', 'hi', () => {
+          setTestingVoice(false);
+        });
+      });
+    } catch (err) {
+      setVoiceStatus(`Voice check failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+      setTestingVoice(false);
+    }
+  };
 
   // Generate new math problem on open
   useEffect(() => {
@@ -249,6 +275,32 @@ export const ParentDashboardModal: React.FC<ParentDashboardProps> = ({
                     <RefreshCw className={`w-3.5 h-3.5 ${resetting ? 'animate-spin' : ''}`} />
                     <span>Reset All Progress</span>
                   </button>
+                </div>
+
+                {/* Voice Engine Test */}
+                <div className="border-t pt-4 mt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                      <Stethoscope className="w-4 h-4 text-violet-600" />
+                      Voice Engine Health
+                    </span>
+                    <button
+                      onClick={handleTestVoice}
+                      disabled={testingVoice}
+                      className="flex items-center gap-1.5 text-sm bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white font-bold px-4 py-2 rounded-xl shadow active:scale-95 transition-all"
+                    >
+                      <Volume2 className="w-4 h-4" />
+                      <span>{testingVoice ? 'Testing...' : '🔊 Test Voice'}</span>
+                    </button>
+                  </div>
+                  {voiceStatus && (
+                    <p className="text-xs text-slate-600 bg-violet-50 border border-violet-200 rounded-xl p-3 leading-relaxed">
+                      {voiceStatus}
+                    </p>
+                  )}
+                  <p className="text-xs text-slate-400 mt-2">
+                    Tip: if no voice plays on the installed APK, install "Google Text-to-Speech" from the Play Store and rebuild the app after running npm install + npx cap sync android.
+                  </p>
                 </div>
               </>
             ) : null}

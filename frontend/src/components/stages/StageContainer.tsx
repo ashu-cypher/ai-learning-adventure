@@ -8,6 +8,7 @@ import { CountingGame } from '../games/CountingGame';
 import { SongScene } from '../games/SongScene';
 import { StoryScene } from '../games/StoryScene';
 import { CelebrationModal } from '../celebration/CelebrationModal';
+import { SpeakButton } from '../audio/SpeakButton';
 import { sound } from '../../audio/soundEngine';
 import { api } from '../../services/api';
 import { Eye, Volume2, Music, ArrowRight, HelpCircle } from 'lucide-react';
@@ -99,6 +100,8 @@ export const StageContainer: React.FC<StageContainerProps> = ({
 
       if (result.is_correct) {
         // Correct answer!
+        sound.playLevelUp();
+        sound.playYay();
         setMiloMood('celebrating');
         setTimeout(() => {
           setShowCelebration(true);
@@ -106,6 +109,7 @@ export const StageContainer: React.FC<StageContainerProps> = ({
         }, 600);
       } else {
         // Child needs assistance: NEVER shame, gently encourage
+        sound.playOops();
         sound.playGentleEncouragement();
         setMiloMood('encouraging');
         setIsSubmitting(false);
@@ -160,20 +164,20 @@ export const StageContainer: React.FC<StageContainerProps> = ({
 
       {/* PHASE 1: INTRO */}
       {phase === 'intro' && (
-        <div className="w-full max-w-lg bg-white/90 border-4 border-amber-300 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col items-center text-center animate-fade-in">
+        <div className="w-full max-w-lg bg-gradient-to-br from-amber-200 via-rose-200 to-pink-300 border-4 border-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col items-center text-center animate-pop-in">
           <div className="text-6xl mb-3 animate-bounce">
             {lesson.teaching.see_objects[0]?.icon || '🌟'}
           </div>
-          <h2 className="font-bubble font-bold text-3xl text-slate-800 mb-2">
-            Let's Explore {lesson.concept.toUpperCase()}!
+          <h2 className="font-bubble font-extrabold text-3xl text-slate-800 mb-2">
+            Let's Explore {lesson.concept.toUpperCase()}! 🎉
           </h2>
-          <p className="font-bubble text-lg text-slate-600 mb-6 font-medium">
+          <p className="font-bubble text-lg text-slate-700 mb-6 font-bold">
             Join Milo on an exciting color discovery!
           </p>
 
           <button
             onClick={handleStartSeeHear}
-            className="w-full py-4 px-6 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-amber-950 font-bubble font-bold text-2xl rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-3"
+            className="w-full py-4 px-6 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bubble font-extrabold text-2xl rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-3 animate-wiggle"
           >
             <span>Let's Start!</span>
             <ArrowRight className="w-7 h-7" />
@@ -183,7 +187,7 @@ export const StageContainer: React.FC<StageContainerProps> = ({
 
       {/* PHASE 2: SEE & HEAR TEACHING */}
       {phase === 'see_hear' && (
-        <div className="w-full max-w-2xl bg-white/90 border-4 border-sky-300 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col items-center animate-fade-in">
+        <div className="w-full max-w-2xl bg-gradient-to-br from-sky-200 via-cyan-100 to-teal-200 border-4 border-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col items-center animate-pop-in">
           <div className="flex items-center gap-2 mb-4 bg-sky-100 text-sky-900 px-4 py-1.5 rounded-full font-bubble font-bold text-sm">
             <Eye className="w-4 h-4" />
             <span>SEE & HEAR</span>
@@ -318,6 +322,9 @@ export const StageContainer: React.FC<StageContainerProps> = ({
           onGoToMap={onGoToMap}
         />
       )}
+
+      {/* Floating push-to-speak button: tap any time to hear Milo's instruction */}
+      <SpeakButton englishText={miloSpeech} />
     </div>
   );
 };

@@ -11,6 +11,21 @@ interface MiloProps {
   onTap?: () => void;
 }
 
+/**
+ * Milo's interactive voice lines — tapping Milo makes him chat, teach and
+ * play with the child like a little voice teacher, not just repeat.
+ */
+const MILO_FUN_PHRASES: string[] = [
+  "Hee hee! That tickles! You're my best friend!",
+  "Wow, you found me! High five, little superstar!",
+  "I love playing with you! Let's learn something fun!",
+  "Did you know? Bunnies can hop super high! Boing boing!",
+  "You have the brightest smile! It makes my ears wiggle!",
+  "Psst... I have a secret: you're doing AMAZING!",
+  "Let's sing together! La la la! Your turn!",
+  "Hippity hoppity! I'm the happiest bunny today!",
+];
+
 export const MiloCompanion: React.FC<MiloProps> = ({
   speechText = "Hi! I'm Milo! Let's play!",
   mood = 'idle',
@@ -21,6 +36,8 @@ export const MiloCompanion: React.FC<MiloProps> = ({
 }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [blink, setBlink] = useState(false);
+  const [excited, setExcited] = useState(false);
+  const [tapCount, setTapCount] = useState(0);
 
   // Periodic eye blink for lifelike animation
   useEffect(() => {
@@ -42,10 +59,23 @@ export const MiloCompanion: React.FC<MiloProps> = ({
   }, [speechText, autoSpeak]);
 
   const handleMiloClick = () => {
-    sound.playPop();
-    if (speechText) {
+    sound.playGiggle();
+    // Excited bounce animation
+    setExcited(true);
+    setTimeout(() => setExcited(false), 700);
+
+    // Milo the voice teacher: every other tap he chats playfully,
+    // otherwise he repeats his current teaching line.
+    const nextTap = tapCount + 1;
+    setTapCount(nextTap);
+    const lineToSpeak =
+      nextTap % 2 === 0
+        ? MILO_FUN_PHRASES[Math.floor(Math.random() * MILO_FUN_PHRASES.length)]
+        : speechText;
+
+    if (lineToSpeak) {
       setIsSpeaking(true);
-      sound.speak(speechText, () => {
+      sound.speak(lineToSpeak, () => {
         setIsSpeaking(false);
       });
     }
@@ -88,9 +118,13 @@ export const MiloCompanion: React.FC<MiloProps> = ({
       {/* Animated Milo Character (Cute Bunny with Ears, Whiskers, Bowtie) */}
       <div 
         onClick={handleMiloClick}
-        className={`${sizeClasses} cursor-pointer group transition-transform duration-300 transform hover:scale-105 active:scale-95 relative`}
+        className={`${sizeClasses} cursor-pointer group transition-transform duration-300 transform hover:scale-105 active:scale-95 relative ${excited ? 'animate-milo-boing' : 'animate-milo-bob'}`}
         title="Tap Milo to speak!"
       >
+        {/* Tap-me hint */}
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-pink-500 text-white font-bubble font-extrabold text-xs px-3 py-1 rounded-full shadow-lg animate-bounce whitespace-nowrap z-10">
+          🎙️ Tap me!
+        </div>
         <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl overflow-visible">
           <defs>
             <linearGradient id="bunnyFur" x1="0%" y1="0%" x2="100%" y2="100%">

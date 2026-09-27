@@ -109,6 +109,47 @@ class SoundEngine {
   }
 
   /**
+   * Generic cheerful tone helper — every playful sound in the app is built
+   * from this so each action gets its own distinct voice.
+   */
+  private tone(
+    freqStart: number,
+    freqEnd: number,
+    duration: number,
+    type: OscillatorType = 'sine',
+    volume = 0.25,
+    delay = 0
+  ) {
+    if (this.isMuted) return;
+    try {
+      this.unlockAudio();
+      this.initCtx();
+      if (!this.ctx) return;
+      const t0 = this.ctx.currentTime + delay;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(Math.max(30, freqStart), t0);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(30, freqEnd), t0 + duration);
+      gain.gain.setValueAtTime(volume, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + duration + 0.02);
+    } catch {
+      // AudioContext unavailable
+    }
+  }
+
+  /** Public: re-prime voices (call after a user gesture on Android). */
+  public refreshVoices(): void {
+    this.voicesPromise = null;
+    this.speechPrimed = false;
+    void this.loadVoices().catch(() => undefined);
+  }
+
+  /**
    * Unlock audio on the first user gesture. Android WebView / mobile browsers
    * start AudioContext suspended until a touch/click happens.
    */
@@ -140,7 +181,14 @@ class SoundEngine {
   private attachUnlockListeners() {
     if (this.unlockListenersAttached || typeof window === 'undefined') return;
     this.unlockListenersAttached = true;
-    const unlock = () => this.unlockAudio();
+    const unlock = () => {
+      this.unlockAudio();
+      // Voices sometimes only appear after a real user gesture on Android —
+      // re-prime them here so the first tap-to-speak always has voices.
+      if (!this.speechPrimed) {
+        this.refreshVoices();
+      }
+    };
     const events = ['touchstart', 'touchend', 'pointerdown', 'click', 'keydown'];
     events.forEach((evt) =>
       window.addEventListener(evt, unlock, { passive: true })
@@ -305,6 +353,94 @@ class SoundEngine {
     }
   }
 
+  // ----------------------------------------------------------------
+  // Playful sound palette — a distinct voice for every kind of moment
+  // ----------------------------------------------------------------
+
+  /** Light tap / button press */
+  public playTap() {
+    this.tone(600, 900, 0.07, 'sine', 0.22);
+  }
+
+  /** Bouncy boing for playful jumps */
+  public playBoing() {
+    this.tone(200, 650, 0.22, 'sine', 0.3);
+    this.tone(300, 800, 0.18, 'triangle', 0.15, 0.05);
+  }
+
+  /** Whoosh for screen changes / flying */
+  public playWhoosh() {
+    this.tone(300, 1400, 0.25, 'sawtooth', 0.08);
+  }
+
+  /** Magic sparkle arpeggio */
+  public playSparkle() {
+    [1318.5, 1568, 2093, 2637].forEach((f, i) =>
+      this.tone(f, f * 1.02, 0.18, 'sine', 0.16, i * 0.07)
+    );
+  }
+
+  /** Happy giggle-like warble */
+  public playGiggle() {
+    [700, 900, 750, 1000, 850].forEach((f, i) =>
+      this.tone(f, f * 1.15, 0.09, 'triangle', 0.2, i * 0.09)
+    );
+  }
+
+  /** Gentle "oops, try again" — warm, never harsh */
+  public playOops() {
+    this.tone(400, 300, 0.18, 'sine', 0.2);
+    this.tone(350, 280, 0.2, 'sine', 0.18, 0.16);
+  }
+
+  /** Level-up fanfare, bigger than the star chime */
+  public playLevelUp() {
+    [523.25, 659.25, 783.99, 1046.5, 1318.5, 1568].forEach((f, i) =>
+      this.tone(f, f, 0.22, 'triangle', 0.22, i * 0.1)
+    );
+  }
+
+  /** Celebration yay — rising happy slide */
+  public playYay() {
+    this.tone(500, 1500, 0.35, 'sine', 0.25);
+    this.tone(750, 2000, 0.3, 'triangle', 0.12, 0.08);
+  }
+
+  /** Drum: deep kick */
+  public playDrumKick() {
+    this.tone(150, 45, 0.25, 'sine', 0.5);
+  }
+
+  /** Drum: snappy snare */
+  public playDrumSnare() {
+    this.tone(900, 300, 0.12, 'square', 0.12);
+    this.tone(180, 120, 0.12, 'sine', 0.3);
+  }
+
+  /** Drum: bright hat tick */
+  public playDrumHat() {
+    this.tone(6000, 5000, 0.05, 'square', 0.06);
+  }
+
+  /** Drum: shimmering cymbal */
+  public playDrumCymbal() {
+    this.tone(4500, 3800, 0.5, 'triangle', 0.1);
+    this.tone(5200, 4200, 0.4, 'sine', 0.08, 0.03);
+  }
+
+  /** Animal-style cheerful chirp (for sticker rewards) */
+  public playChirp() {
+    this.tone(1800, 2600, 0.09, 'sine', 0.18);
+    this.tone(2200, 3000, 0.09, 'sine', 0.18, 0.1);
+  }
+
+  /** Soft lullaby-ish goodnight tone for calm moments */
+  public playLullaby() {
+    [392, 440, 523.25, 440].forEach((f, i) =>
+      this.tone(f, f * 0.99, 0.4, 'sine', 0.14, i * 0.32)
+    );
+  }
+
   // ------------------------------------------------------------------- speech
 
   /**
@@ -465,14 +601,24 @@ class SoundEngine {
         const native = await this.getNativeTts();
         if (native) {
           try {
-            await native.speak({
-              text,
-              lang: targetLang,
-              rate: CHEERFUL_RATE,
-              pitch: Math.min(CHEERFUL_PITCH, 2.0),
-              volume: 1.0,
-              category: 'ambient',
-            });
+            // Guard against a native call that never resolves
+            const timeoutMs = Math.min(
+              15000,
+              Math.max(4000, text.length * 120)
+            );
+            await Promise.race([
+              native.speak({
+                text,
+                lang: targetLang,
+                rate: CHEERFUL_RATE,
+                pitch: Math.min(CHEERFUL_PITCH, 2.0),
+                volume: 1.0,
+                category: 'ambient',
+              }),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Native TTS timed out')), timeoutMs)
+              ),
+            ]);
           } catch (err) {
             this.lastError =
               err instanceof Error ? err.message : 'Native TTS failed';
@@ -495,6 +641,8 @@ class SoundEngine {
         } catch {
           // ignore cancel errors
         }
+        // Some Android WebViews need a beat after cancel() before speak()
+        await new Promise((resolve) => setTimeout(resolve, 80));
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = CHEERFUL_RATE;

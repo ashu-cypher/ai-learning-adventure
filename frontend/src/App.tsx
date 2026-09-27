@@ -95,7 +95,22 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F0F9FF] text-slate-800 flex flex-col font-sans relative selection:bg-amber-200">
+    <div className="min-h-screen text-slate-800 flex flex-col font-sans relative selection:bg-amber-200 overflow-hidden bg-gradient-to-b from-sky-200 via-rose-100 to-amber-100">
+      {/* Playful drifting background blobs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div className="animate-blob absolute -top-10 -left-10 w-64 h-64 rounded-full bg-pink-300/50 blur-2xl" />
+        <div className="animate-blob-slow absolute top-1/3 -right-16 w-80 h-80 rounded-full bg-amber-300/50 blur-2xl" />
+        <div className="animate-blob absolute bottom-10 left-1/4 w-72 h-72 rounded-full bg-sky-300/50 blur-2xl" />
+        <div className="animate-blob-slow absolute top-10 right-1/3 w-40 h-40 rounded-full bg-violet-300/40 blur-2xl" />
+        {/* Floating decorative emojis */}
+        <div className="animate-float absolute top-24 left-6 text-4xl opacity-60">🌈</div>
+        <div className="animate-float absolute top-64 right-8 text-4xl opacity-60" style={{ animationDelay: '0.8s' }}>⭐</div>
+        <div className="animate-float absolute bottom-32 left-10 text-4xl opacity-60" style={{ animationDelay: '1.6s' }}>🎈</div>
+        <div className="animate-float absolute bottom-56 right-12 text-4xl opacity-60" style={{ animationDelay: '2.2s' }}>🦋</div>
+      </div>
+
+      {/* Top Header */}
+      <div className="relative z-10 flex flex-col min-h-screen">
       {/* Top Header */}
       <ChildHeader
         currentStars={totalStars}
@@ -185,6 +200,7 @@ export const App: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
