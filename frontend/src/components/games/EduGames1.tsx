@@ -230,6 +230,8 @@ const Particles: React.FC<{ particles: Particle[] }> = ({ particles }) => (
 interface Animal {
   id: string;
   emoji: string;
+  /** Crisp Twemoji art vendored in public/assets/animals — emoji is the fallback */
+  img: string;
   en: string;
   hi: string;
   soundEn: string;
@@ -238,9 +240,24 @@ interface Animal {
   play: () => void;
 }
 
+/** Renders the animal art, falling back to emoji if the PNG is missing */
+const AnimalFace: React.FC<{ animal: Animal; className?: string }> = ({ animal, className }) => {
+  const [err, setErr] = useState(false);
+  if (err || !animal.img) return <span className={className}>{animal.emoji}</span>;
+  return (
+    <img
+      src={animal.img}
+      alt={animal.en}
+      draggable={false}
+      onError={() => setErr(true)}
+      className={className}
+    />
+  );
+};
+
 const ANIMALS: Animal[] = [
   {
-    id: 'dog', emoji: '🐶', en: 'Dog', hi: 'कुत्ता',
+    id: 'dog', emoji: '🐶', img: 'assets/animals/dog.png', en: 'Dog', hi: 'कुत्ता',
     soundEn: 'Woof woof!', soundHi: 'भौं भौं!',
     bg: 'from-amber-200 to-orange-300',
     play: () => {
@@ -249,7 +266,7 @@ const ANIMALS: Animal[] = [
     },
   },
   {
-    id: 'cat', emoji: '🐱', en: 'Cat', hi: 'बिल्ली',
+    id: 'cat', img: 'assets/animals/cat.png', emoji: '🐱', en: 'Cat', hi: 'बिल्ली',
     soundEn: 'Meow!', soundHi: 'म्याऊँ!',
     bg: 'from-pink-200 to-rose-300',
     play: () => {
@@ -258,7 +275,7 @@ const ANIMALS: Animal[] = [
     },
   },
   {
-    id: 'cow', emoji: '🐄', en: 'Cow', hi: 'गाय',
+    id: 'cow', img: 'assets/animals/cow.png', emoji: '🐄', en: 'Cow', hi: 'गाय',
     soundEn: 'Moo!', soundHi: 'मूँ!',
     bg: 'from-sky-200 to-blue-300',
     play: () => {
@@ -267,7 +284,7 @@ const ANIMALS: Animal[] = [
     },
   },
   {
-    id: 'lion', emoji: '🦁', en: 'Lion', hi: 'शेर',
+    id: 'lion', img: 'assets/animals/lion.png', emoji: '🦁', en: 'Lion', hi: 'शेर',
     soundEn: 'Roar!', soundHi: 'दहाड़!',
     bg: 'from-yellow-200 to-amber-400',
     play: () => {
@@ -276,7 +293,7 @@ const ANIMALS: Animal[] = [
     },
   },
   {
-    id: 'duck', emoji: '🦆', en: 'Duck', hi: 'बत्तख',
+    id: 'duck', img: 'assets/animals/duck.png', emoji: '🦆', en: 'Duck', hi: 'बत्तख',
     soundEn: 'Quack quack!', soundHi: 'क्वैक क्वैक!',
     bg: 'from-lime-200 to-green-300',
     play: () => {
@@ -286,7 +303,7 @@ const ANIMALS: Animal[] = [
     },
   },
   {
-    id: 'elephant', emoji: '🐘', en: 'Elephant', hi: 'हाथी',
+    id: 'elephant', img: 'assets/animals/elephant.png', emoji: '🐘', en: 'Elephant', hi: 'हाथी',
     soundEn: 'Toot toot!', soundHi: 'टूट टूट!',
     bg: 'from-violet-200 to-purple-300',
     play: () => {
@@ -367,6 +384,7 @@ export const AnimalSoundsGame: React.FC<MiniGameProps> = ({ onBack, onGameComple
     // Quiz mode
     if (quizTarget && animal.id === quizTarget.id) {
       sound.playSuccessChime();
+      sound.playJingle('correct');
       burst(p.x, p.y, ['🎉', '⭐', animal.emoji, '💛'], 12);
       registerHit('Amazing! You found it!', 'बहुत बढ़िया! तुमने खोज लिया!', 2);
       speakKid(
@@ -436,10 +454,10 @@ export const AnimalSoundsGame: React.FC<MiniGameProps> = ({ onBack, onGameComple
             >
               <span
                 key={`${animal.id}-${tapped.id === animal.id ? tapped.n : 0}`}
-                className={`text-7xl md:text-8xl drop-shadow-lg ${tapped.id === animal.id ? 'edu-tap-anim' : 'edu-float'}`}
+                className={`drop-shadow-lg ${tapped.id === animal.id ? 'edu-tap-anim' : 'edu-float'}`}
                 style={tapped.id === animal.id ? undefined : { animationDelay: `${ANIMALS.indexOf(animal) * 0.25}s` }}
               >
-                {animal.emoji}
+                <AnimalFace animal={animal} className="w-20 h-20 md:w-24 md:h-24 object-contain" />
               </span>
               <span className="font-bubble font-extrabold text-xl text-slate-800">
                 {animal.en}
@@ -466,6 +484,28 @@ export const AnimalSoundsGame: React.FC<MiniGameProps> = ({ onBack, onGameComple
 };
 
 /* ================= GAME 2: Feed the Hungry Monster ================= */
+
+/** Real monster art (Kenney CC0 parts, composed) — face changes with mood, emoji fallback */
+const MONSTER_IMGS: Record<string, string> = {
+  idle: 'assets/monsters/monster_happy.png',
+  dance: 'assets/monsters/monster_happy.png',
+  munch: 'assets/monsters/monster_silly.png',
+  shake: 'assets/monsters/monster_cute.png',
+};
+
+const MonsterFace: React.FC<{ mood: 'idle' | 'munch' | 'shake' | 'dance' }> = ({ mood }) => {
+  const [err, setErr] = useState(false);
+  if (err) return <span className="text-[104px] md:text-[136px]">👹</span>;
+  return (
+    <img
+      src={MONSTER_IMGS[mood] ?? MONSTER_IMGS.idle}
+      alt="Hungry monster"
+      draggable={false}
+      onError={() => setErr(true)}
+      className="w-36 h-36 md:w-44 md:h-44 object-contain"
+    />
+  );
+};
 
 type FoodColor = 'red' | 'yellow' | 'purple' | 'orange' | 'green' | 'pink';
 type FoodShape = 'round' | 'long' | 'triangle';
@@ -603,6 +643,7 @@ export const FeedMonsterGame: React.FC<MiniGameProps> = ({ onBack, onGameComplet
         );
         if (willStreak % 5 === 0) {
           // Extra happy dance on streak milestones
+          sound.playJingle('win');
           setTimeout(() => setMonsterMood('dance'), 700);
           setTimeout(() => setMonsterMood('idle'), 2900);
         } else {
@@ -656,10 +697,10 @@ export const FeedMonsterGame: React.FC<MiniGameProps> = ({ onBack, onGameComplet
           </span>
         )}
 
-        {/* Monster */}
+        {/* Monster — real Kenney art (composed monster PNGs), mood changes the face */}
         <div className="flex flex-col items-center mb-2">
-          <div ref={monsterRef} className={`text-[104px] md:text-[136px] leading-none drop-shadow-xl ${moodClass}`}>
-            👹
+          <div ref={monsterRef} className={`leading-none drop-shadow-xl ${moodClass}`}>
+            <MonsterFace mood={monsterMood} />
           </div>
           {target && (
             <div className="edu-pop -mt-2 bg-white rounded-3xl border-4 border-orange-300 px-6 py-3 shadow-lg max-w-full">

@@ -187,6 +187,7 @@ export const MegaMixGame: React.FC<MiniGameProps> = ({ onBack, onGameComplete })
     if (n >= 30 && !completeFiredRef.current) {
       completeFiredRef.current = true;
       sound.playFanfare();
+      sound.playJingle('win');
       onGameComplete?.();
     }
   };
@@ -205,6 +206,7 @@ export const MegaMixGame: React.FC<MiniGameProps> = ({ onBack, onGameComplete })
     if (done % 6 === 0) {
       setShowLevelUp(true);
       sound.playFanfare();
+      sound.playJingle('levelup');
       speakKid(
         `Level ${Math.floor(done / 6) + 1}! You're a superstar!`,
         `लेवल ${Math.floor(done / 6) + 1}! तुम सुपरस्टार हो!`
@@ -483,7 +485,7 @@ const SortRound: React.FC<RoundProps> = ({ level, onHit, onMiss, onDone, posOf }
         }
       }, 450);
     } else {
-      onMiss();
+      onMiss(p.x, p.y);
       sound.playGentleEncouragement();
       speakKid(
         `Oops! The ${selected.en} is ${COLOR_META[selected.color].en}, not ${COLOR_META[color].en}!`,

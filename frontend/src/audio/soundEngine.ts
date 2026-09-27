@@ -764,6 +764,24 @@ class SoundEngine {
       lastError: this.lastError,
     };
   }
+
+  /** Plays a real recorded jingle (Kenney CC0 music pack) from public/assets/audio.
+   *  Uses HTMLAudio so it works on web and inside the Capacitor APK (bundled assets). */
+  public playJingle(kind: 'win' | 'levelup' | 'correct' | 'click' = 'correct') {
+    try {
+      if (typeof Audio === 'undefined') return;
+      const el = new Audio(`assets/audio/jingle_${kind}.ogg`);
+      el.volume = 0.9;
+      const p = el.play();
+      if (p && typeof (p as Promise<void>).catch === 'function') {
+        (p as Promise<void>).catch(() => {
+          /* autoplay blocked — stay silent, never crash a game */
+        });
+      }
+    } catch {
+      /* audio not available — non-fatal */
+    }
+  }
 }
 
 export const sound = new SoundEngine();
