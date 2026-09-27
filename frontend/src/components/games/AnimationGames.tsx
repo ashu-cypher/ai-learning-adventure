@@ -48,9 +48,9 @@ const Celebrate: React.FC<{ message: string }> = ({ message }) => (
 interface FloatItem {
   id: number;
   x: number;
-  y: number;
   size: number;
-  speed: number;
+  /** seconds for the full CSS rise/fall journey */
+  duration: number;
   color?: string;
 }
 
@@ -73,42 +73,38 @@ export const BubblePopGame: React.FC<AnimGameProps> = ({ onBack, onGameComplete 
   const idRef = useRef(1);
   const scoreRef = useRef(0);
   const doneRef = useRef(false);
+  const areaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     sound.speak('Pop pop pop! Tap the bubbles before they float away!');
     const spawn = setInterval(() => {
       const id = idRef.current++;
+      // Slower duration = slower bubble. GPU CSS animation does the moving.
+      const duration = 5 + Math.random() * 4;
       setBubbles((prev) => [
         ...prev.slice(-13),
-        {
-          id,
-          x: 4 + Math.random() * 84,
-          y: 108,
-          size: 44 + Math.random() * 48,
-          speed: 0.9 + Math.random() * 1.7,
-        },
+        { id, x: 4 + Math.random() * 84, size: 44 + Math.random() * 48, duration },
       ]);
     }, 650);
-    const move = setInterval(() => {
-      setBubbles((prev) =>
-        prev
-          .map((b) => ({ ...b, y: b.y - b.speed }))
-          .filter((b) => b.y > -14)
-      );
-    }, 90);
-    return () => {
-      clearInterval(spawn);
-      clearInterval(move);
-    };
+    return () => clearInterval(spawn);
   }, []);
 
-  const popBubble = (b: FloatItem) => {
-    setBubbles((prev) => prev.filter((p) => p.id !== b.id));
+  const removeBubble = (id: number) => {
+    setBubbles((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const popBubble = (b: FloatItem, e: React.MouseEvent) => {
+    removeBubble(b.id);
     const burstId = idRef.current++;
-    setBursts((prev) => [...prev, { id: burstId, x: b.x, y: b.y, emoji: '💥' }]);
+    // Burst exactly where the little finger tapped
+    const area = areaRef.current?.getBoundingClientRect();
+    const t = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const bx = area ? ((t.left + t.width / 2 - area.left) / area.width) * 100 : b.x;
+    const by = area ? ((t.top + t.height / 2 - area.top) / area.height) * 100 : 50;
+    setBursts((prev) => [...prev, { id: burstId, x: bx, y: by, emoji: '💥' }]);
     setTimeout(() => {
       setBursts((prev) => prev.filter((z) => z.id !== burstId));
-    }, 400);
+    }, 500);
     sound.playPop();
     const n = scoreRef.current + 1;
     scoreRef.current = n;
@@ -129,35 +125,42 @@ export const BubblePopGame: React.FC<AnimGameProps> = ({ onBack, onGameComplete 
   return (
     <div className="w-full flex flex-col items-center animate-fade-in select-none">
       <TopBar title="🫧 Bubble Pop" onBack={onBack} score={score} />
-      <div className="relative w-full h-[420px] md:h-[480px] rounded-3xl border-4 border-sky-300 shadow-xl overflow-hidden bg-gradient-to-b from-sky-200 via-cyan-100 to-sky-100">
+      <div
+        ref={areaRef}
+        className="relative w-full h-[420px] md:h-[480px] rounded-3xl border-4 border-sky-300 shadow-xl overflow-hidden bg-gradient-to-b from-sky-200 via-cyan-100 to-sky-100"
+      >
         <p className="absolute top-3 left-0 right-0 text-center font-bubble font-bold text-lg text-sky-900/80 pointer-events-none">
           Tap the bubbles to pop them! 🫧
         </p>
         {bubbles.map((b) => (
           <button
             key={b.id}
-            onClick={() => popBubble(b)}
-            className="absolute rounded-full border-4 border-sky-300/80 bg-sky-200/30 shadow-inner active:scale-90 transition-transform"
+            onClick={(e) => popBubble(b, e)}
+            onAnimationEnd={() => removeBubble(b.id)}
+            className="absolute rounded-full border-4 border-sky-300/80 bg-sky-200/30 shadow-inner active:scale-90"
             style={{
               left: `${b.x}%`,
-              top: `${b.y}%`,
+              bottom: -70,
               width: b.size,
               height: b.size,
-              transform: 'translate(-50%, -50%)',
+              animation: `riseUp ${b.duration}s linear forwards`,
+              willChange: 'transform',
             }}
             aria-label="bubble"
           >
-            <span
-              className="absolute rounded-full bg-white/80"
-              style={{ width: b.size * 0.25, height: b.size * 0.25, left: '20%', top: '18%' }}
-            />
+            <span className="animate-sway absolute inset-0 rounded-full">
+              <span
+                className="absolute rounded-full bg-white/80"
+                style={{ width: b.size * 0.25, height: b.size * 0.25, left: '20%', top: '18%' }}
+              />
+            </span>
           </button>
         ))}
         {bursts.map((z) => (
           <div
             key={z.id}
-            className="absolute text-5xl pointer-events-none animate-bounce"
-            style={{ left: `${z.x}%`, top: `${z.y}%`, transform: 'translate(-50%, -50%)' }}
+            className="absolute text-5xl pointer-events-none animate-burst-pop"
+            style={{ left: `${z.x}%`, top: `${z.y}%` }}
           >
             {z.emoji}
           </div>
@@ -185,6 +188,8 @@ export const BalloonFloatGame: React.FC<AnimGameProps> = ({ onBack, onGameComple
   const scoreRef = useRef(0);
   const doneRef = useRef(false);
 
+  const areaRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     sound.speak('Look at the pretty balloons! Tap them to pop with a happy bang!');
     const spawn = setInterval(() => {
@@ -194,33 +199,30 @@ export const BalloonFloatGame: React.FC<AnimGameProps> = ({ onBack, onGameComple
         {
           id,
           x: 4 + Math.random() * 82,
-          y: 112,
           size: 56 + Math.random() * 28,
-          speed: 0.7 + Math.random() * 1.1,
+          duration: 6 + Math.random() * 4,
           color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
         },
       ]);
     }, 900);
-    const move = setInterval(() => {
-      setBalloons((prev) =>
-        prev
-          .map((b) => ({ ...b, y: b.y - b.speed }))
-          .filter((b) => b.y > -18)
-      );
-    }, 90);
-    return () => {
-      clearInterval(spawn);
-      clearInterval(move);
-    };
+    return () => clearInterval(spawn);
   }, []);
 
-  const popBalloon = (b: FloatItem) => {
-    setBalloons((prev) => prev.filter((p) => p.id !== b.id));
+  const removeBalloon = (id: number) => {
+    setBalloons((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const popBalloon = (b: FloatItem, e: React.MouseEvent) => {
+    removeBalloon(b.id);
     const burstId = idRef.current++;
-    setBursts((prev) => [...prev, { id: burstId, x: b.x, y: b.y, emoji: '🎉' }]);
+    const area = areaRef.current?.getBoundingClientRect();
+    const t = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const bx = area ? ((t.left + t.width / 2 - area.left) / area.width) * 100 : b.x;
+    const by = area ? ((t.top + t.height / 2 - area.top) / area.height) * 100 : 50;
+    setBursts((prev) => [...prev, { id: burstId, x: bx, y: by, emoji: '🎉' }]);
     setTimeout(() => {
       setBursts((prev) => prev.filter((z) => z.id !== burstId));
-    }, 450);
+    }, 500);
     sound.playPop();
     const n = scoreRef.current + 1;
     scoreRef.current = n;
@@ -241,50 +243,57 @@ export const BalloonFloatGame: React.FC<AnimGameProps> = ({ onBack, onGameComple
   return (
     <div className="w-full flex flex-col items-center animate-fade-in select-none">
       <TopBar title="🎈 Balloon Pop" onBack={onBack} score={score} />
-      <div className="relative w-full h-[420px] md:h-[480px] rounded-3xl border-4 border-rose-300 shadow-xl overflow-hidden bg-gradient-to-b from-indigo-300 via-sky-200 to-amber-100">
+      <div
+        ref={areaRef}
+        className="relative w-full h-[420px] md:h-[480px] rounded-3xl border-4 border-rose-300 shadow-xl overflow-hidden bg-gradient-to-b from-indigo-300 via-sky-200 to-amber-100"
+      >
         <p className="absolute top-3 left-0 right-0 text-center font-bubble font-bold text-lg text-indigo-900/80 pointer-events-none">
           Tap the balloons to pop them! 🎈
         </p>
         {balloons.map((b) => (
           <button
             key={b.id}
-            onClick={() => popBalloon(b)}
-            className="absolute active:scale-90 transition-transform animate-float"
+            onClick={(e) => popBalloon(b, e)}
+            onAnimationEnd={() => removeBalloon(b.id)}
+            className="absolute active:scale-90"
             style={{
               left: `${b.x}%`,
-              top: `${b.y}%`,
+              bottom: -120,
               width: b.size,
-              transform: 'translateX(-50%)',
+              animation: `riseUp ${b.duration}s linear forwards`,
+              willChange: 'transform',
             }}
             aria-label="balloon"
           >
-            <div
-              className="rounded-full mx-auto shadow-lg"
-              style={{
-                backgroundColor: b.color,
-                width: b.size,
-                height: b.size * 1.25,
-                borderRadius: '50% 50% 50% 50% / 55% 55% 45% 45%',
-              }}
-            />
-            <div
-              className="mx-auto"
-              style={{
-                width: 0,
-                height: 0,
-                borderLeft: '7px solid transparent',
-                borderRight: '7px solid transparent',
-                borderBottom: `10px solid ${b.color}`,
-              }}
-            />
-            <div className="w-0.5 h-10 bg-slate-400 mx-auto" />
+            <span className="animate-sway block">
+              <div
+                className="rounded-full mx-auto shadow-lg"
+                style={{
+                  backgroundColor: b.color,
+                  width: b.size,
+                  height: b.size * 1.25,
+                  borderRadius: '50% 50% 50% 50% / 55% 55% 45% 45%',
+                }}
+              />
+              <div
+                className="mx-auto"
+                style={{
+                  width: 0,
+                  height: 0,
+                  borderLeft: '7px solid transparent',
+                  borderRight: '7px solid transparent',
+                  borderBottom: `10px solid ${b.color}`,
+                }}
+              />
+              <div className="w-0.5 h-10 bg-slate-400 mx-auto" />
+            </span>
           </button>
         ))}
         {bursts.map((z) => (
           <div
             key={z.id}
-            className="absolute text-5xl pointer-events-none animate-bounce"
-            style={{ left: `${z.x}%`, top: `${z.y}%`, transform: 'translate(-50%, -50%)' }}
+            className="absolute text-5xl pointer-events-none animate-burst-pop"
+            style={{ left: `${z.x}%`, top: `${z.y}%` }}
           >
             {z.emoji}
           </div>
@@ -311,6 +320,8 @@ export const StarCatchGame: React.FC<AnimGameProps> = ({ onBack, onGameComplete 
   const scoreRef = useRef(0);
   const doneRef = useRef(false);
 
+  const areaRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     sound.speak('Catch the falling stars! Tap them before they land!');
     const spawn = setInterval(() => {
@@ -320,32 +331,29 @@ export const StarCatchGame: React.FC<AnimGameProps> = ({ onBack, onGameComplete 
         {
           id,
           x: 4 + Math.random() * 84,
-          y: -8,
           size: 40 + Math.random() * 32,
-          speed: 0.8 + Math.random() * 1.4,
+          duration: 4 + Math.random() * 3,
         },
       ]);
     }, 750);
-    const move = setInterval(() => {
-      setStars((prev) =>
-        prev
-          .map((s) => ({ ...s, y: s.y + s.speed }))
-          .filter((s) => s.y < 112)
-      );
-    }, 90);
-    return () => {
-      clearInterval(spawn);
-      clearInterval(move);
-    };
+    return () => clearInterval(spawn);
   }, []);
 
-  const catchStar = (s: FloatItem) => {
-    setStars((prev) => prev.filter((p) => p.id !== s.id));
+  const removeStar = (id: number) => {
+    setStars((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const catchStar = (s: FloatItem, e: React.MouseEvent) => {
+    removeStar(s.id);
     const burstId = idRef.current++;
-    setBursts((prev) => [...prev, { id: burstId, x: s.x, y: s.y, emoji: '✨' }]);
+    const area = areaRef.current?.getBoundingClientRect();
+    const t = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const bx = area ? ((t.left + t.width / 2 - area.left) / area.width) * 100 : s.x;
+    const by = area ? ((t.top + t.height / 2 - area.top) / area.height) * 100 : 50;
+    setBursts((prev) => [...prev, { id: burstId, x: bx, y: by, emoji: '✨' }]);
     setTimeout(() => {
       setBursts((prev) => prev.filter((z) => z.id !== burstId));
-    }, 450);
+    }, 500);
     sound.playStarCollect();
     const n = scoreRef.current + 1;
     scoreRef.current = n;
@@ -366,7 +374,10 @@ export const StarCatchGame: React.FC<AnimGameProps> = ({ onBack, onGameComplete 
   return (
     <div className="w-full flex flex-col items-center animate-fade-in select-none">
       <TopBar title="⭐ Star Catch" onBack={onBack} score={score} />
-      <div className="relative w-full h-[420px] md:h-[480px] rounded-3xl border-4 border-amber-300 shadow-xl overflow-hidden bg-gradient-to-b from-indigo-950 via-indigo-800 to-purple-700">
+      <div
+        ref={areaRef}
+        className="relative w-full h-[420px] md:h-[480px] rounded-3xl border-4 border-amber-300 shadow-xl overflow-hidden bg-gradient-to-b from-indigo-950 via-indigo-800 to-purple-700"
+      >
         <p className="absolute top-3 left-0 right-0 text-center font-bubble font-bold text-lg text-amber-100/90 pointer-events-none">
           Tap the falling stars to catch them! ⭐
         </p>
@@ -374,25 +385,27 @@ export const StarCatchGame: React.FC<AnimGameProps> = ({ onBack, onGameComplete 
         {stars.map((s) => (
           <button
             key={s.id}
-            onClick={() => catchStar(s)}
-            className="absolute active:scale-90 transition-transform animate-wiggle"
+            onClick={(e) => catchStar(s, e)}
+            onAnimationEnd={() => removeStar(s.id)}
+            className="absolute active:scale-90"
             style={{
               left: `${s.x}%`,
-              top: `${s.y}%`,
+              top: 0,
               fontSize: s.size,
-              transform: 'translate(-50%, -50%)',
               lineHeight: 1,
+              animation: `fallDown ${s.duration}s linear forwards`,
+              willChange: 'transform',
             }}
             aria-label="star"
           >
-            ⭐
+            <span className="animate-sway inline-block">⭐</span>
           </button>
         ))}
         {bursts.map((z) => (
           <div
             key={z.id}
-            className="absolute text-5xl pointer-events-none animate-bounce"
-            style={{ left: `${z.x}%`, top: `${z.y}%`, transform: 'translate(-50%, -50%)' }}
+            className="absolute text-5xl pointer-events-none animate-burst-pop"
+            style={{ left: `${z.x}%`, top: `${z.y}%` }}
           >
             {z.emoji}
           </div>

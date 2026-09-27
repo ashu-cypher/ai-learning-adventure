@@ -179,23 +179,33 @@ export const SupermanFlyGame: React.FC<HeroGameProps> = ({ onBack, onGameComplet
 
   useEffect(() => {
     sound.speak('Help Superman fly! Tap the sky to fly up. Catch the stars, dodge the clouds!');
-    const loop = setInterval(() => {
+    // Buttery-smooth physics via requestAnimationFrame (not a chunky interval)
+    let raf = 0;
+    let last = performance.now();
+    let cloudTimer = 0;
+    let starTimer = 0;
+    const step = (now: number) => {
+      const dt = Math.min((now - last) / 16.67, 3); // normalize to 60fps units
+      last = now;
       const s = phys.current;
-      s.tick += 1;
-      s.v = Math.min(s.v + 0.9, 12);
-      s.y = Math.max(2, Math.min(92, s.y + s.v * 0.55));
+      s.v = Math.min(s.v + 0.9 * dt, 12);
+      s.y = Math.max(2, Math.min(92, s.y + s.v * 0.55 * dt));
       s.clouds.forEach((c) => {
-        c.x -= 2.2;
+        c.x -= 2.2 * dt;
       });
       s.clouds = s.clouds.filter((c) => c.x > -15);
       s.stars.forEach((st) => {
-        st.x -= 1.8;
+        st.x -= 1.8 * dt;
       });
       s.stars = s.stars.filter((st) => st.x > -10);
-      if (s.tick % 24 === 0) {
+      cloudTimer += dt;
+      if (cloudTimer >= 24) {
+        cloudTimer = 0;
         s.clouds.push({ id: idRef.current++, x: 105, y: 5 + Math.random() * 80 });
       }
-      if (s.tick % 36 === 0) {
+      starTimer += dt;
+      if (starTimer >= 36) {
+        starTimer = 0;
         s.stars.push({ id: idRef.current++, x: 105, y: 8 + Math.random() * 76 });
       }
       // Catch stars
@@ -241,8 +251,10 @@ export const SupermanFlyGame: React.FC<HeroGameProps> = ({ onBack, onGameComplet
         }
       }
       setSnap({ y: s.y, clouds: [...s.clouds], stars: [...s.stars] });
-    }, 60);
-    return () => clearInterval(loop);
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   const flap = () => {
@@ -333,17 +345,23 @@ export const BatmanNightGame: React.FC<HeroGameProps> = ({ onBack, onGameComplet
       };
       setBats((prev) => [...prev.slice(-9), bat]);
     }, 1100);
-    const move = setInterval(() => {
-      const now = Date.now();
+    const move = { id: 0 };
+    let last = performance.now();
+    const stepMove = (now: number) => {
+      const dt = Math.min((now - last) / 120, 4); // normalize to old 120ms ticks
+      last = now;
+      const t = Date.now();
       setBats((prev) =>
         prev
-          .map((b) => ({ ...b, x: b.x + b.dx }))
-          .filter((b) => b.x > -15 && b.x < 115 && now - b.born < 9000)
+          .map((b) => ({ ...b, x: b.x + b.dx * dt }))
+          .filter((b) => b.x > -15 && b.x < 115 && t - b.born < 9000)
       );
-    }, 120);
+      move.id = requestAnimationFrame(stepMove);
+    };
+    move.id = requestAnimationFrame(stepMove);
     return () => {
       clearInterval(spawn);
-      clearInterval(move);
+      cancelAnimationFrame(move.id);
     };
   }, []);
 
@@ -407,7 +425,7 @@ export const BatmanNightGame: React.FC<HeroGameProps> = ({ onBack, onGameComplet
         {zaps.map((z) => (
           <div
             key={z.id}
-            className="absolute text-5xl pointer-events-none animate-bounce"
+            className="absolute text-5xl pointer-events-none animate-burst-pop"
             style={{ left: `${z.x}%`, top: `${z.y}%` }}
           >
             💡

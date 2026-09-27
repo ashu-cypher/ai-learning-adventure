@@ -11,6 +11,8 @@ import { GamesScreen } from './components/menu/GamesScreen';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { MobileSimulator } from './components/simulator/MobileSimulator';
 import { getCurrentUser, onAuthChange, signOut, type User } from './services/auth';
+import { SettingsModal } from './components/settings/SettingsModal';
+import { settingsStore } from './engine/settingsStore';
 
 export const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'map' | 'stage' | 'games'>('welcome');
@@ -23,6 +25,15 @@ export const App: React.FC = () => {
   // Parent Google sign-in (Gmail auth)
   const [user, setUser] = useState<User | null>(() => getCurrentUser());
   const [showLogin, setShowLogin] = useState(false);
+  // Settings modal (language, sound, voice check)
+  const [showSettings, setShowSettings] = useState(false);
+  // Quick-play: jump straight into a game from the home screen
+  const [quickGameId, setQuickGameId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Sync the sound engine with the persisted Settings choice
+    sound.isMuted = !settingsStore.isSoundEnabled();
+  }, []);
 
   useEffect(() => {
     // Keep auth state in sync (native + web)
@@ -101,6 +112,7 @@ export const App: React.FC = () => {
       onNavigateMap={() => setCurrentScreen('map')}
       onNavigateGames={() => {
         sound.playPop();
+        setQuickGameId(null);
         setCurrentScreen('games');
       }}
     >
@@ -130,6 +142,7 @@ export const App: React.FC = () => {
           setCurrentScreen('games');
         }}
         onOpenParentGate={() => setIsParentGateOpen(true)}
+        onOpenSettings={() => setShowSettings(true)}
         currentScreen={currentScreen}
       />
 
@@ -147,6 +160,11 @@ export const App: React.FC = () => {
             onStartAdventure={handleStartAdventure}
             onPlayGames={() => {
               sound.playPop();
+              setQuickGameId(null);
+              setCurrentScreen('games');
+            }}
+            onQuickPlayGame={(gameId) => {
+              setQuickGameId(gameId);
               setCurrentScreen('games');
             }}
             parentUser={user}
@@ -155,7 +173,11 @@ export const App: React.FC = () => {
           />
         ) : currentScreen === 'games' ? (
           <GamesScreen
-            onBack={() => setCurrentScreen('welcome')}
+            initialGameId={quickGameId}
+            onBack={() => {
+              setQuickGameId(null);
+              setCurrentScreen('welcome');
+            }}
             onGoToLearning={() => setCurrentScreen('map')}
           />
         ) : currentScreen === 'map' ? (
@@ -187,6 +209,9 @@ export const App: React.FC = () => {
           setIsParentGateOpen(false);
         }}
       />
+
+      {/* Settings (language, sound, voice check) */}
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
 
       {/* Parent Google Sign-In */}
       {showLogin && (

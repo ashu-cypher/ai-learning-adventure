@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Volume2, Sparkles } from 'lucide-react';
 import { sound } from '../../audio/soundEngine';
+import { settingsStore } from '../../engine/settingsStore';
 
 interface MiloProps {
   speechText?: string;
@@ -14,16 +15,17 @@ interface MiloProps {
 /**
  * Milo's interactive voice lines — tapping Milo makes him chat, teach and
  * play with the child like a little voice teacher, not just repeat.
+ * Bilingual: picked according to the global Settings language.
  */
-const MILO_FUN_PHRASES: string[] = [
-  "Hee hee! That tickles! You're my best friend!",
-  "Wow, you found me! High five, little superstar!",
-  "I love playing with you! Let's learn something fun!",
-  "Did you know? Bunnies can hop super high! Boing boing!",
-  "You have the brightest smile! It makes my ears wiggle!",
-  "Psst... I have a secret: you're doing AMAZING!",
-  "Let's sing together! La la la! Your turn!",
-  "Hippity hoppity! I'm the happiest bunny today!",
+const MILO_FUN_PHRASES: { en: string; hi: string }[] = [
+  { en: "Hee hee! That tickles! You're my best friend!", hi: 'ही ही! गुदगुदी होती है! तुम मेरे सबसे अच्छे दोस्त हो!' },
+  { en: "Wow, you found me! High five, little superstar!", hi: 'वाह, तुमने मुझे ढूंढ लिया! हाई फाइव, छोटे सुपरस्टार!' },
+  { en: "I love playing with you! Let's learn something fun!", hi: 'मुझे तुम्हारे साथ खेलना बहुत पसंद है! चलो कुछ मज़ेदार सीखते हैं!' },
+  { en: "Did you know? Bunnies can hop super high! Boing boing!", hi: 'पता है? खरगोश बहुत ऊंचा कूद सकते हैं! बोइंग बोइंग!' },
+  { en: "You have the brightest smile! It makes my ears wiggle!", hi: 'तुम्हारी मुस्कान सबसे प्यारी है! मेरे कान हिलने लगते हैं!' },
+  { en: "Psst... I have a secret: you're doing AMAZING!", hi: 'प्स्स्त... एक राज़ बताऊं: तुम बहुत बढ़िया कर रहे हो!' },
+  { en: "Let's sing together! La la la! Your turn!", hi: 'चलो साथ गाते हैं! ला ला ला! अब तुम्हारी बारी!' },
+  { en: "Hippity hoppity! I'm the happiest bunny today!", hi: 'हिप्पिटी हॉपिटी! आज मैं सबसे खुश खरगोश हूं!' },
 ];
 
 export const MiloCompanion: React.FC<MiloProps> = ({
@@ -65,17 +67,17 @@ export const MiloCompanion: React.FC<MiloProps> = ({
     setTimeout(() => setExcited(false), 700);
 
     // Milo the voice teacher: every other tap he chats playfully,
-    // otherwise he repeats his current teaching line.
+    // otherwise he repeats his current teaching line — in the kid's language.
+    const lang = settingsStore.getLang();
     const nextTap = tapCount + 1;
     setTapCount(nextTap);
+    const funPhrase = MILO_FUN_PHRASES[Math.floor(Math.random() * MILO_FUN_PHRASES.length)];
     const lineToSpeak =
-      nextTap % 2 === 0
-        ? MILO_FUN_PHRASES[Math.floor(Math.random() * MILO_FUN_PHRASES.length)]
-        : speechText;
+      nextTap % 2 === 0 ? (lang === 'hi' ? funPhrase.hi : funPhrase.en) : speechText;
 
     if (lineToSpeak) {
       setIsSpeaking(true);
-      sound.speak(lineToSpeak, () => {
+      sound.speak(lineToSpeak, lang, () => {
         setIsSpeaking(false);
       });
     }

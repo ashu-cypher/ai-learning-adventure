@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Home, Map, Star, Volume2, VolumeX, ShieldCheck, Gamepad2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Home, Map, Star, Volume2, VolumeX, ShieldCheck, Gamepad2, Settings } from 'lucide-react';
 import { sound } from '../../audio/soundEngine';
+import { settingsStore } from '../../engine/settingsStore';
 
 interface HeaderProps {
   currentStars: number;
@@ -8,6 +9,7 @@ interface HeaderProps {
   onNavigateMap: () => void;
   onNavigateGames: () => void;
   onOpenParentGate: () => void;
+  onOpenSettings: () => void;
   currentScreen: 'welcome' | 'map' | 'stage' | 'games';
 }
 
@@ -17,15 +19,22 @@ export const ChildHeader: React.FC<HeaderProps> = ({
   onNavigateMap,
   onNavigateGames,
   onOpenParentGate,
+  onOpenSettings,
   currentScreen,
 }) => {
-  const [isMuted, setIsMuted] = useState(sound.isMuted);
+  const [isMuted, setIsMuted] = useState(!settingsStore.isSoundEnabled());
+
+  // Stay in sync when Settings changes sound
+  useEffect(() => settingsStore.subscribe(() => setIsMuted(!settingsStore.isSoundEnabled())), []);
 
   const toggleSound = () => {
-    const muted = sound.toggleMute();
-    setIsMuted(muted);
-    if (!muted) {
+    const nextEnabled = !settingsStore.isSoundEnabled();
+    settingsStore.setSoundEnabled(nextEnabled);
+    sound.isMuted = !nextEnabled;
+    if (nextEnabled) {
       sound.playPop();
+    } else {
+      sound.stopSpeaking();
     }
   };
 
@@ -86,6 +95,18 @@ export const ChildHeader: React.FC<HeaderProps> = ({
 
       {/* Right Controls */}
       <div className="flex items-center gap-2 md:gap-3">
+        {/* Settings (language, voice check) */}
+        <button
+          onClick={() => {
+            sound.playPop();
+            onOpenSettings();
+          }}
+          className="p-3 rounded-2xl shadow-md border-2 bg-white/90 border-violet-200 text-violet-600 hover:bg-white active:scale-95 transition-transform"
+          title="Settings"
+        >
+          <Settings className="w-6 h-6" />
+        </button>
+
         {/* Sound Toggle */}
         <button
           onClick={toggleSound}

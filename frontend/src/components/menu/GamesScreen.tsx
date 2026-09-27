@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { sound } from '../../audio/soundEngine';
 import { AudioInstructionBox } from '../audio/AudioInstructionBox';
 import { GamesHub } from './GamesHub';
@@ -6,12 +6,16 @@ import { PaintingGame } from '../games/PaintingGame';
 import { SpidermanWebGame, SupermanFlyGame, BatmanNightGame } from '../games/SuperheroGames';
 import { PianoGame, DrumGame, XylophoneGame } from '../games/MusicGames';
 import { BubblePopGame, BalloonFloatGame, StarCatchGame } from '../games/AnimationGames';
+import { AnimalSoundsGame, FeedMonsterGame, MemoryPairsGame, EDU1_GAMES } from '../games/EduGames1';
+import { ShapeSorterGame, FruitCatchGame, VehicleParadeGame, EDU2_GAMES } from '../games/EduGames2';
 import { recordGamePlayed, toggleFavoriteGame, getGameStats } from '../../engine/gameStore';
 import { Star, ArrowLeft } from 'lucide-react';
 
 interface GamesScreenProps {
   onBack: () => void;
   onGoToLearning: () => void;
+  /** Jump straight into this game on mount (quick-play from home) */
+  initialGameId?: string | null;
 }
 
 interface MiniGameProps {
@@ -30,6 +34,17 @@ const GAME_COMPONENTS: Record<string, React.FC<MiniGameProps>> = {
   bubbles: BubblePopGame,
   balloons: BalloonFloatGame,
   stars: StarCatchGame,
+  animals: AnimalSoundsGame,
+  feedmonster: FeedMonsterGame,
+  memory: MemoryPairsGame,
+  shapes: ShapeSorterGame,
+  fruitcatch: FruitCatchGame,
+  vehicles: VehicleParadeGame,
+};
+
+const EDU_GAME_INFO: Record<string, { name: string; emoji: string; instructions: { en: string; hi: string } }> = {
+  ...EDU1_GAMES,
+  ...EDU2_GAMES,
 };
 
 const GAME_NAMES: Record<string, string> = {
@@ -43,6 +58,7 @@ const GAME_NAMES: Record<string, string> = {
   bubbles: 'Bubble Pop',
   balloons: 'Balloon Pop',
   stars: 'Star Catch',
+  ...Object.fromEntries(Object.entries(EDU_GAME_INFO).map(([id, info]) => [id, info.name])),
 };
 
 // Bilingual spoken instructions for each game (English + Hindi)
@@ -89,7 +105,7 @@ const GAME_INSTRUCTIONS: Record<string, { en: string; hi: string }> = {
   },
 };
 
-export const GamesScreen: React.FC<GamesScreenProps> = ({ onBack, onGoToLearning }) => {
+export const GamesScreen: React.FC<GamesScreenProps> = ({ onBack, onGoToLearning, initialGameId }) => {
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -101,6 +117,16 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({ onBack, onGoToLearning
     setIsFavorite(getGameStats(gameId)?.favorites ?? false);
     setActiveGameId(gameId);
   };
+
+  // Quick-play from the home screen: jump straight into the game
+  const initialConsumed = useRef(false);
+  useEffect(() => {
+    if (!initialConsumed.current && initialGameId && GAME_COMPONENTS[initialGameId]) {
+      initialConsumed.current = true;
+      handleSelectGame(initialGameId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialGameId]);
 
   const handleGameBack = () => {
     if (activeGameId) {
@@ -133,10 +159,11 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({ onBack, onGoToLearning
 
   if (activeGameId && GAME_COMPONENTS[activeGameId]) {
     const Game = GAME_COMPONENTS[activeGameId];
-    const instructions = GAME_INSTRUCTIONS[activeGameId] ?? {
-      en: 'Have fun playing!',
-      hi: 'Khelo aur maze karo!',
-    };
+    const instructions = GAME_INSTRUCTIONS[activeGameId] ??
+      EDU_GAME_INFO[activeGameId]?.instructions ?? {
+        en: 'Have fun playing!',
+        hi: 'Khelo aur maze karo!',
+      };
     return (
       <div className="w-full max-w-4xl mx-auto relative">
         {/* Top bar: back + favorite */}

@@ -52,6 +52,9 @@ interface NativeTts {
 
 const CHEERFUL_RATE = 0.95;
 const CHEERFUL_PITCH = 1.3;
+// Hindi engines sound clearer and less "robotic" slightly slower & lower
+const HINDI_RATE = 0.88;
+const HINDI_PITCH = 1.15;
 const SPEECH_LANG: Record<SpeechLang, string> = { en: 'en-US', hi: 'hi-IN' };
 
 // Friendly voice name hints, most preferred first
@@ -66,11 +69,14 @@ const VOICE_HINTS: Record<SpeechLang, string[]> = {
     'Jenny',
   ],
   hi: [
+    // Prefer real Hindi voices first — generic "Hindi" picks are often poor
     'Google हिन्दी',
+    'Microsoft Swara',
+    'Microsoft Madhur',
     'हिन्दी',
-    'Hindi',
     'Lekha',
     'Kalpana',
+    'Hindi',
     'Google',
   ],
 };
@@ -594,6 +600,9 @@ class SoundEngine {
 
     this.unlockAudio();
     const targetLang = SPEECH_LANG[lang];
+    // Hindi is clearer slightly slower and less high-pitched
+    const rate = lang === 'hi' ? HINDI_RATE : CHEERFUL_RATE;
+    const pitch = Math.min(lang === 'hi' ? HINDI_PITCH : CHEERFUL_PITCH, 2.0);
 
     void (async () => {
       try {
@@ -610,8 +619,8 @@ class SoundEngine {
               native.speak({
                 text,
                 lang: targetLang,
-                rate: CHEERFUL_RATE,
-                pitch: Math.min(CHEERFUL_PITCH, 2.0),
+                rate,
+                pitch,
                 volume: 1.0,
                 category: 'ambient',
               }),
@@ -645,8 +654,8 @@ class SoundEngine {
         await new Promise((resolve) => setTimeout(resolve, 80));
 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = CHEERFUL_RATE;
-        utterance.pitch = CHEERFUL_PITCH;
+        utterance.rate = rate;
+        utterance.pitch = pitch;
         utterance.lang = targetLang;
         utterance.volume = 1.0; // Android WebView sometimes defaults quiet
 

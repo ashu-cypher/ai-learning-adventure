@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
-import { sound, type SpeechLang } from '../../audio/soundEngine';
+import { sound } from '../../audio/soundEngine';
+import { useKidSettings } from '../../engine/settingsStore';
 
 interface SpeakButtonProps {
   /** What Milo should say in English */
@@ -14,15 +15,15 @@ interface SpeakButtonProps {
 /**
  * Big floating push-to-speak button.
  * Always visible during play so the child can tap it any time to hear
- * what to do — in English or Hindi. Tapping is a real user gesture,
- * which is exactly what Android needs to allow speech.
+ * what to do — in the language chosen in Settings. Tapping is a real
+ * user gesture, which is exactly what Android needs to allow speech.
  */
 export const SpeakButton: React.FC<SpeakButtonProps> = ({
   englishText,
   hindiText,
   className = '',
 }) => {
-  const [lang, setLang] = useState<SpeechLang>('en');
+  const { lang } = useKidSettings();
   const [speaking, setSpeaking] = useState(false);
 
   const text = lang === 'hi' && hindiText ? hindiText : englishText;
@@ -33,19 +34,6 @@ export const SpeakButton: React.FC<SpeakButtonProps> = ({
     sound.speak(text, lang, () => setSpeaking(false));
   };
 
-  const toggleLang = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    sound.playPop();
-    setLang((prev) => {
-      const next = prev === 'en' ? 'hi' : 'en';
-      // Immediately speak in the new language so the child hears the switch
-      const nextText = next === 'hi' && hindiText ? hindiText : englishText;
-      setSpeaking(true);
-      sound.speak(nextText, next, () => setSpeaking(false));
-      return next;
-    });
-  };
-
   const handleStop = (e: React.MouseEvent) => {
     e.stopPropagation();
     sound.stopSpeaking();
@@ -54,15 +42,6 @@ export const SpeakButton: React.FC<SpeakButtonProps> = ({
 
   return (
     <div className={`fixed bottom-6 right-5 z-40 flex flex-col items-center gap-2 ${className}`}>
-      {/* Language toggle pill */}
-      <button
-        onClick={toggleLang}
-        aria-label="Switch language"
-        className="bg-white/95 border-2 border-violet-300 text-violet-700 font-bubble font-extrabold text-sm px-3 py-1.5 rounded-full shadow-lg active:scale-95 transition-transform"
-      >
-        {lang === 'en' ? '🇬🇧 EN' : '🇮🇳 हिंदी'}
-      </button>
-
       {/* The big push button */}
       <button
         onClick={handleSpeak}

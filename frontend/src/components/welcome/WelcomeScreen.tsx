@@ -7,14 +7,26 @@ import type { User } from '../../services/auth';
 interface WelcomeProps {
   onStartAdventure: () => void;
   onPlayGames: () => void;
+  onQuickPlayGame?: (gameId: string) => void;
   parentUser?: User | null;
   onParentSignIn?: () => void;
   onParentSignOut?: () => void;
 }
 
+/** Most-loved games, playable straight from the home screen — no scrolling. */
+const POPULAR_GAMES = [
+  { id: 'animals', name: 'Animals', emoji: '🦁', gradient: 'from-emerald-400 to-teal-500' },
+  { id: 'fruitcatch', name: 'Fruit Catch', emoji: '🍓', gradient: 'from-rose-400 to-pink-500' },
+  { id: 'painting', name: 'Painting', emoji: '🖌️', gradient: 'from-pink-400 to-rose-500' },
+  { id: 'memory', name: 'Memory', emoji: '🃏', gradient: 'from-violet-400 to-purple-500' },
+  { id: 'piano', name: 'Piano', emoji: '🎹', gradient: 'from-amber-400 to-orange-500' },
+  { id: 'bubbles', name: 'Bubbles', emoji: '🫧', gradient: 'from-sky-400 to-cyan-500' },
+];
+
 export const WelcomeScreen: React.FC<WelcomeProps> = ({
   onStartAdventure,
   onPlayGames,
+  onQuickPlayGame,
   parentUser,
   onParentSignIn,
   onParentSignOut,
@@ -87,6 +99,30 @@ export const WelcomeScreen: React.FC<WelcomeProps> = ({
         <span className="text-3xl">🎮</span>
         <span>FUN GAMES</span>
       </button>
+
+      {/* Popular games — right on the home screen, no scrolling */}
+      <div className="w-full max-w-md mt-6">
+        <p className="font-bubble font-extrabold text-xl text-slate-700 mb-3">
+          ⭐ Tap & Play!
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          {POPULAR_GAMES.map((game) => (
+            <button
+              key={game.id}
+              onClick={() => {
+                sound.playPop();
+                onQuickPlayGame?.(game.id);
+              }}
+              className={`bg-gradient-to-br ${game.gradient} rounded-3xl p-3 border-4 border-white shadow-xl flex flex-col items-center gap-1 hover:scale-105 active:scale-95 transition-transform min-h-[104px] justify-center`}
+            >
+              <span className="text-4xl animate-float drop-shadow">{game.emoji}</span>
+              <span className="font-bubble font-extrabold text-sm text-white drop-shadow text-center leading-tight">
+                {game.name}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Grown-ups: Google sign-in */}
       <div className="w-full max-w-md mt-8 flex flex-col items-center gap-2">
