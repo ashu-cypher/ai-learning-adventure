@@ -8,6 +8,7 @@ import { PianoGame, DrumGame, XylophoneGame } from '../games/MusicGames';
 import { BubblePopGame, BalloonFloatGame, StarCatchGame } from '../games/AnimationGames';
 import { AnimalSoundsGame, FeedMonsterGame, MemoryPairsGame, EDU1_GAMES } from '../games/EduGames1';
 import { ShapeSorterGame, FruitCatchGame, VehicleParadeGame, EDU2_GAMES } from '../games/EduGames2';
+import { MegaMixGame, MEGAMIX_GAME_INFO } from '../games/MegaMixGame';
 import { recordGamePlayed, toggleFavoriteGame, getGameStats } from '../../engine/gameStore';
 import { Star, ArrowLeft } from 'lucide-react';
 
@@ -40,11 +41,13 @@ const GAME_COMPONENTS: Record<string, React.FC<MiniGameProps>> = {
   shapes: ShapeSorterGame,
   fruitcatch: FruitCatchGame,
   vehicles: VehicleParadeGame,
+  megamix: MegaMixGame,
 };
 
 const EDU_GAME_INFO: Record<string, { name: string; emoji: string; instructions: { en: string; hi: string } }> = {
   ...EDU1_GAMES,
   ...EDU2_GAMES,
+  megamix: MEGAMIX_GAME_INFO,
 };
 
 const GAME_NAMES: Record<string, string> = {

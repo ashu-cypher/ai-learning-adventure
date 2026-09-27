@@ -15,10 +15,10 @@ interface WelcomeProps {
 
 /** Most-loved games, playable straight from the home screen — no scrolling. */
 const POPULAR_GAMES = [
+  { id: 'megamix', name: 'Mega Mix', emoji: '🎪', gradient: 'from-fuchsia-400 to-violet-500' },
   { id: 'animals', name: 'Animals', emoji: '🦁', gradient: 'from-emerald-400 to-teal-500' },
   { id: 'fruitcatch', name: 'Fruit Catch', emoji: '🍓', gradient: 'from-rose-400 to-pink-500' },
   { id: 'painting', name: 'Painting', emoji: '🖌️', gradient: 'from-pink-400 to-rose-500' },
-  { id: 'memory', name: 'Memory', emoji: '🃏', gradient: 'from-violet-400 to-purple-500' },
   { id: 'piano', name: 'Piano', emoji: '🎹', gradient: 'from-amber-400 to-orange-500' },
   { id: 'bubbles', name: 'Bubbles', emoji: '🫧', gradient: 'from-sky-400 to-cyan-500' },
 ];

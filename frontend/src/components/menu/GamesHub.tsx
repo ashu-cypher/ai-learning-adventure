@@ -82,6 +82,7 @@ const CATEGORIES: Category[] = [
     ring: 'border-emerald-200',
     tint: 'bg-gradient-to-br from-emerald-100 to-teal-100',
     games: [
+      { id: 'megamix', name: 'Mega Mix', emoji: '🎪' },
       { id: 'animals', name: 'Animals', emoji: '🦁' },
       { id: 'feedmonster', name: 'Feed Monster', emoji: '👹' },
       { id: 'memory', name: 'Memory', emoji: '🃏' },
@@ -111,6 +112,7 @@ const GAME_SOUNDS: Record<string, () => void> = {
   shapes: () => sound.playBoing(),
   fruitcatch: () => sound.playPop(),
   vehicles: () => sound.playWhoosh(),
+  megamix: () => sound.playFanfare(),
   learning: () => sound.playYay(),
 };
 
